@@ -2,22 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use App\Models\Usuario;
+use Illuminate\Http\Request;
+
 
 class UsuariosController extends Controller
 {
+    public function index()
+    {
+        $dados = DB::table('usuarios')->get();
+
+        return view('usuarios.listar', ['usuarios' => $dados]);
+    }
+
     /**
-     * Display a listing of the resource.
+     * Show the form for creating a new resource.
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function create()
     {
-        $usuarios = Usuario::all();
-        return response()->json($usuarios, 200);
+        return view('usuarios.novo');
     }
 
     /**
@@ -28,23 +34,23 @@ class UsuariosController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = Validator::make($request->all(), [
-            'name'     => 'required|min:3',
-            'email'    => 'email|unique:users',
-            'password' => 'required',
+        $validation = Validator::make($request->all(), [
+            'nome'  => 'required|min:3|max:120',
+            'email' => 'required|email:rfc,dns',
+            'idade' => 'required|integer|min:1',
+            'telefone'  => 'required|min:8|max:12'
         ]);
 
-        if ($validated->fails()) {
-            return response()->json(['mensagem' => 'Problemas encontrados.'], 422);
+        if ($validation->fails()) {
+            return redirect('usuarios/novo')->withErrors($validation)->withInput();
         } else {
-            $data = [
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => $request->password
-            ];
-
-            Usuario::create($data);
-            return response()->json(['mensagem' => 'Usuário cadastrado.'], 201);
+            DB::table('usuarios')->insert([
+                'nome'  => $request->nome,
+                'email'      => $request->email,
+                'idade' => $request->idade,
+                'telefone' => $request->telefone
+            ]);
+            return redirect('/usuarios')->with('mensagem', 'Usuario cadastrado.');
         }
     }
 
@@ -56,11 +62,22 @@ class UsuariosController extends Controller
      */
     public function show($id)
     {
-        if (! $usuario = Usuario::find($id)) {
-            return response()->json(['mensagem' => 'Usuário não encontrado'], 404);
-        }
+        $usuario = DB::table('usuarios')->where('id', $id)->first();
 
-        return response()->json($usuario, 200);
+        return view('usuarios.detalhes', ['usuario' =>$usuario]);
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function edit($id)
+    {
+        $usuario = DB::table('usuarios')->where('id', $id)->first();
+
+        return view('usuarios.editar', ['usuario' => $usuario]);
     }
 
     /**
@@ -72,27 +89,23 @@ class UsuariosController extends Controller
      */
     public function update(Request $request, $id)
     {
-        if (! $usuario = DB::table('users')->where('id', $id)->first()) {
-            return response()->json(['mensagem' => 'Usuário não encontrado'], 404);
-        }
-
-        $validated = Validator::make($request->all(), [
-            'name'     => 'required|min:3',
-            'email'    => 'email',
-            'password' => 'required',
+        $validation = Validator::make($request->all(), [
+            'nome'  => 'required|min:3|max:120',
+            'email' => 'required|email:rfc,dns',
+            'idade' => 'required|integer',
+            'telefone'  => 'required|numeric'
         ]);
 
-        if ($validated->fails()) {
-            return response()->json(['mensagem' => 'Problemas encontrados.'], 422);
+        if ($validation->fails()) {
+            return redirect('usuarios/editar/'.$id)->withErrors($validation);
         } else {
-            $data = [
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => $request->password
-            ];
-
-            DB::table('users')->where('id', $id)->update($data);
-            return response()->json(['mensagem' => 'Usuário alterado.'], 200);
+            DB::table('usuarios')->where('id', $id)->update([
+                'nome'  => $request->nome,
+                'email'      => $request->email,
+                'idade' => $request->idade,
+                'telefone' => $request->telefone
+            ]);
+            return redirect('usuarios')->with('mensagem', 'Alteração concluída');
         }
     }
 
@@ -104,11 +117,7 @@ class UsuariosController extends Controller
      */
     public function destroy($id)
     {
-        if (! $usuario = DB::table('users')->where('id', $id)->first()) {
-            return response()->json(['mensagem' => 'Usuário não encontrado'], 404);
-        }
-
-        DB::table('users')->where('id', $id)->delete();
-        return response()->json(['mensagem' => 'Usuário excluído.'], 200);
+        DB::table('usuarios')->where('id', $id)->delete();
+        return redirect('usuarios')->with('mensagem', 'Excluído');
     }
 }

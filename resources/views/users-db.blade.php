@@ -16,11 +16,11 @@
                 <th>Usuário</th>
             </tr>
         </thead>
-        @foreach($users as $item)
+        @foreach($usuarios as $item)
         <tr>
             <td>{{ $item->nome }}</td>
             <td>{{ $item->email }}</td>
-            <td>{{ $item->user }}</td>
+            <td>{{ $item->usuarios }}</td>
         </tr>
         @endforeach
     </table>
